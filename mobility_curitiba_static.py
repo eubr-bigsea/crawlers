@@ -32,7 +32,7 @@ class Bus:
         # Get the date of the most recent bus line collected
         latest_date = collection.find().sort([['_id', pymongo.DESCENDING]]).limit(1)[0]['DATE']
         # Get the latest existing bus lines
-        latest_bus_lines = collection.find({'DATE': latest_date})
+        latest_bus_lines = collection.find({'DATE': latest_date}).limit(2)
         self.bus_lines = []
         for bus_line in latest_bus_lines:
             self.bus_lines.append(bus_line['COD'])
@@ -61,8 +61,11 @@ class BusLines (Bus):
                     "attempts.", str(datetime.datetime.now())
                 time.sleep(120)
         for record in json.loads(content.text):
-            record['DATE'] = datetime.datetime.now().strftime("%Y-%m-%d")
-            self.data.append(record)
+            if record.has_key('COD_LINHA'):
+                record['DATE'] = datetime.datetime.now().strftime("%Y-%m-%d")
+                self.data.append(record)
+            else:
+                pass
 
 
 
@@ -99,13 +102,66 @@ class BusStops (Bus):
 
 class BusPaths (Bus):
     def get_data(self):
-        print "CODE HERE"
+        for bus_line in self.bus_lines:
+            error = True
+            attempts = 0
+            link = "http://transporteservico.urbs.curitiba.pr.gov.br/getTrechosItinerarios.php?linha=" + str(
+                bus_line) + "&c=" + self.key
+            # Get data from the URBS web server
+            while (error):
+                try:
+                    content = requests.get(link)
+                    error = False
+                # Error in the Json content
+                except ValueError:
+                    attempts += 1
+                    print "Failed to get JSON data (Value error)", attempts, "attempts.", str(datetime.datetime.now())
+                    time.sleep(120)
+                # Requisition error
+                except requests.exceptions.ConnectionError:
+                    attempts += 1
+                    print "Failed to get JSON data (Request error)", attempts, \
+                        "attempts.", str(datetime.datetime.now())
+                    time.sleep(120)
+            # Split the array and add some information
+            for record in json.loads(content.text):
+                record['DATE'] = datetime.datetime.now().strftime('%Y-%m-%d')
+                record['BUS_LINE'] = bus_line
+                # Append to the data array
+                self.data.append(record)
 
 
 
 class BusRoutes (Bus):
     def get_data(self):
-        print "CODE HERE"
+        for bus_line in self.bus_lines:
+            error = True
+            attempts = 0
+            link = "http://transporteservico.urbs.curitiba.pr.gov.br/getShapeLinha.php?linha=" + str(
+                bus_line) + "&c=" + self.key
+            # Get data from the URBS web server
+            while (error):
+                try:
+                    content = requests.get(link)
+                    error = False
+                # Error in the Json content
+                except ValueError:
+                    attempts += 1
+                    print "Failed to get JSON data (Value error)", attempts, "attempts.", str(datetime.datetime.now())
+                    time.sleep(120)
+                # Requisition error
+                except requests.exceptions.ConnectionError:
+                    attempts += 1
+                    print "Failed to get JSON data (Request error)", attempts, \
+                        "attempts.", str(datetime.datetime.now())
+                    time.sleep(120)
+            # Split the array and add some information
+            record = {}
+            record['ROUTES'] = json.loads(content.text)
+            record['DATE'] = datetime.datetime.now().strftime('%Y-%m-%d')
+            record['BUS_LINE'] = bus_line
+            # Append to the data array
+            self.data.append(record)
 
 
 
