@@ -24,45 +24,62 @@ from zabbix import pyzabbix_sender
 
 
 class Bus:
-    def __init__(self, key):
+    def __init__(self, key, query_collection):
         self.key = key
         self.data = []
+        # Source collection is the name of the collection with the list
+        # of objects to be searched, For example, to get the buses schedule,
+        # it is necessary to know the existing bus lines. Thus, the query_collection
+        # is the collection with the list of existing bus lines.
+        self.source_collection = query_collection
 
-    def get_latest_buslines(self, collection):
+    def get_latest_buslines(self):
         # Get the date of the most recent bus line collected
-        latest_date = collection.find().sort([['_id', pymongo.DESCENDING]]).limit(1)[0]['DATE']
+        latest_date = self.source_collection.find().sort([['_id', pymongo.DESCENDING]]).limit(1)[0]['DATA']
         # Get the latest existing bus lines
-        latest_bus_lines = collection.find({'DATE': latest_date}).limit(2)
+        latest_bus_lines = self.source_collection.find({'DATA': latest_date}).limit(2)
         self.bus_lines = []
         for bus_line in latest_bus_lines:
             self.bus_lines.append(bus_line['COD'])
 
+    def get_latest_vehicles(self):
+        # Get the date of the most recent bus line collected
+        latest_date = self.source_collection.find().sort([['_id', pymongo.DESCENDING]]).limit(1)[0]['DATE']
+        # Get the latest existing bus lines
+        latest_bus_vehicles = self.source_collection.find({'DATE': latest_date}).limit(2)
+        self.bus_vehicles = []
+        for bus_vehicle in latest_bus_vehicles:
+            if not bus_vehicle['PREFIXO'] in self.bus_vehicles:
+                self.bus_vehicles.append(bus_vehicle['PREFIXO'])
 
-class BusLines (Bus):
-    '''
-    Class for collecting data about bus lines in Curitiba from the URBS webserver.
-    '''
-    def get_data(self):
-        link = "http://transporteservico.urbs.curitiba.pr.gov.br/getLinhas.php?c=" + self.key
+    def request(self, link):
         error = True
         attempts = 0
+        # Get data from the URBS web server
         while (error):
             try:
                 content = requests.get(link)
                 error = False
+            # Error in the Json content
             except ValueError:
                 attempts += 1
-                print "Failed to get JSON data (Value error)", attempts, \
-                    "attempts.", str(datetime.datetime.now())
+                print "Failed to get JSON data (Value error)", attempts, "attempts.", str(datetime.datetime.now())
                 time.sleep(120)
+            # Requisition error
             except requests.exceptions.ConnectionError:
                 attempts += 1
                 print "Failed to get JSON data (Request error)", attempts, \
                     "attempts.", str(datetime.datetime.now())
                 time.sleep(120)
-        for record in json.loads(content.text):
-            if record.has_key('COD_LINHA'):
-                record['DATE'] = datetime.datetime.now().strftime("%Y-%m-%d")
+        return json.loads(content.text)
+
+
+class BusLines (Bus):
+    def get_data(self):
+        link = "http://transporteservico.urbs.curitiba.pr.gov.br/getLinhas.php?c=" + self.key
+        for record in self.request(link):
+            if record.has_key('COD'):
+                record['DATA'] = datetime.datetime.now().strftime("%Y-%m-%d")
                 self.data.append(record)
             else:
                 pass
@@ -71,62 +88,28 @@ class BusLines (Bus):
 
 class BusStops (Bus):
     def get_data(self):
+        self.get_latest_buslines()
         for bus_line in self.bus_lines:
-            error = True
-            attempts = 0
             link = "http://transporteservico.urbs.curitiba.pr.gov.br/getPontosLinha.php?linha=" + str(
                 bus_line) + "&c=" + self.key
-            # Get data from the URBS web server
-            while (error):
-                try:
-                    content = requests.get(link)
-                    error = False
-                # Error in the Json content
-                except ValueError:
-                    attempts += 1
-                    print "Failed to get JSON data (Value error)", attempts, "attempts.", str(datetime.datetime.now())
-                    time.sleep(120)
-                # Requisition error
-                except requests.exceptions.ConnectionError:
-                    attempts += 1
-                    print "Failed to get JSON data (Request error)", attempts, \
-                        "attempts.", str(datetime.datetime.now())
-                    time.sleep(120)
             # Split the array and add some information
-            for record in json.loads(content.text):
-                record['DATE'] = datetime.datetime.now().strftime('%Y-%m-%d')
-                record['BUS_LINE'] = bus_line
+            for record in self.request(link):
+                record['DATA'] = datetime.datetime.now().strftime('%Y-%m-%d')
+                record['COD_LINHA'] = bus_line
                 # Append to the data array
                 self.data.append(record)
 
 
 class BusPaths (Bus):
     def get_data(self):
+        self.get_latest_buslines()
         for bus_line in self.bus_lines:
-            error = True
-            attempts = 0
             link = "http://transporteservico.urbs.curitiba.pr.gov.br/getTrechosItinerarios.php?linha=" + str(
                 bus_line) + "&c=" + self.key
-            # Get data from the URBS web server
-            while (error):
-                try:
-                    content = requests.get(link)
-                    error = False
-                # Error in the Json content
-                except ValueError:
-                    attempts += 1
-                    print "Failed to get JSON data (Value error)", attempts, "attempts.", str(datetime.datetime.now())
-                    time.sleep(120)
-                # Requisition error
-                except requests.exceptions.ConnectionError:
-                    attempts += 1
-                    print "Failed to get JSON data (Request error)", attempts, \
-                        "attempts.", str(datetime.datetime.now())
-                    time.sleep(120)
             # Split the array and add some information
-            for record in json.loads(content.text):
-                record['DATE'] = datetime.datetime.now().strftime('%Y-%m-%d')
-                record['BUS_LINE'] = bus_line
+            for record in self.request(link):
+                record['DATA'] = datetime.datetime.now().strftime('%Y-%m-%d')
+                record['COD_LINHA'] = bus_line
                 # Append to the data array
                 self.data.append(record)
 
@@ -134,32 +117,15 @@ class BusPaths (Bus):
 
 class BusRoutes (Bus):
     def get_data(self):
+        self.get_latest_buslines()
         for bus_line in self.bus_lines:
-            error = True
-            attempts = 0
             link = "http://transporteservico.urbs.curitiba.pr.gov.br/getShapeLinha.php?linha=" + str(
                 bus_line) + "&c=" + self.key
-            # Get data from the URBS web server
-            while (error):
-                try:
-                    content = requests.get(link)
-                    error = False
-                # Error in the Json content
-                except ValueError:
-                    attempts += 1
-                    print "Failed to get JSON data (Value error)", attempts, "attempts.", str(datetime.datetime.now())
-                    time.sleep(120)
-                # Requisition error
-                except requests.exceptions.ConnectionError:
-                    attempts += 1
-                    print "Failed to get JSON data (Request error)", attempts, \
-                        "attempts.", str(datetime.datetime.now())
-                    time.sleep(120)
             # Split the array and add some information
             record = {}
-            record['ROUTES'] = json.loads(content.text)
-            record['DATE'] = datetime.datetime.now().strftime('%Y-%m-%d')
-            record['BUS_LINE'] = bus_line
+            record['COORDENADAS'] = self.request(link)
+            record['DATA'] = datetime.datetime.now().strftime('%Y-%m-%d')
+            record['COD_LINHA'] = bus_line
             # Append to the data array
             self.data.append(record)
 
@@ -167,13 +133,32 @@ class BusRoutes (Bus):
 
 class BusSchedules (Bus):
     def get_data(self):
-        print "CODE HERE"
+        self.get_latest_buslines()
+        for bus_line in self.bus_lines:
+            link = "http://transporteservico.urbs.curitiba.pr.gov.br/getTabelaLinha.php?linha=" + str(
+                bus_line) + "&c=" + self.key
+            # Split the array and add some information
+            for record in self.request(link):
+                record['DATA'] = datetime.datetime.now().strftime('%Y-%m-%d')
+                record['COD_LINHA'] = bus_line
+                # Append to the data array
+                self.data.append(record)
 
 
 
 class BusVehicles (Bus):
     def get_data(self):
-        print "CODE HERE"
+        self.get_latest_vehicles()
+        for bus_vehicle in self.bus_vehicles:
+            link = "http://transporteservico.urbs.curitiba.pr.gov.br/getTabelaVeiculo.php?carro=" + str(
+                bus_vehicle) + "&c=" + self.key
+            # Split the array and add some information
+            for record in self.request(link):
+                record['DATA'] = datetime.datetime.now().strftime('%Y-%m-%d')
+                # Append to the data array
+                self.data.append(record)
+
+
 
 
 
@@ -190,8 +175,6 @@ class IO:
         parser.add_argument('-u', '--urbs_key', help='URBS access code', required=True)
         parser.add_argument('-f', '--control_file', help='File to control the execution time', required=True)
         parser.add_argument('-z', '--zabbix_host', help='Zabbix host for monitoring', required=True)
-        parser.add_argument('-b', '--buslines_collection', help='Name of the Mongo collection\
-            with the URBS bus lines', required=True)
         parser.add_argument('-m', '--metadata', help='CSV with the URBS databases metadata in two \
             columns. Format: class,collection.', required=True)
         self.args = vars(parser.parse_args())
@@ -201,10 +184,12 @@ class IO:
         self.databases = []
         with open(metadata_file) as infile:
             for line in infile:
+                columns = line.rstrip().split(",")
                 record = {}
-                record['name'] = line.rstrip().split(",")[0]
-                record['class'] = line.rstrip().split(",")[1]
-                record['collection'] = line.rstrip().split(",")[2]
+                record['name'] = columns[0]
+                record['class'] = columns[1]
+                record['collection'] = columns[2]
+                record['source_collection'] = columns[3]
                 self.databases.append(record)
 
 
@@ -323,10 +308,13 @@ if __name__ == "__main__":
 
                     print database['name']
 
-                    crawler = eval(database['class'])(parameters.args['urbs_key'])
-                    buslines_collection = connection.get_collection(\
-                        parameters.args['buslines_collection'])
-                    crawler.get_latest_buslines(buslines_collection)
+                    if (database['source_collection']):
+                        source_collection = connection.get_collection( \
+                            database['source_collection'])
+                    else:
+                        source_collection = None
+
+                    crawler = eval(database['class'])(parameters.args['urbs_key'], source_collection)
                     crawler.get_data()
 
                     collection = connection.get_collection(database['collection'])
