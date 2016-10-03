@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 '''
-globo.py
 Collect information about concerts from Google
 and insert to a MongoDB.
 Author: Luiz Fernando M Carvalho
