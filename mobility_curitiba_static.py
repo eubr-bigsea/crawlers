@@ -37,7 +37,7 @@ class Bus:
         # Get the date of the most recent bus line collected
         latest_date = self.source_collection.find().sort([['_id', pymongo.DESCENDING]]).limit(1)[0]['DATA']
         # Get the latest existing bus lines
-        latest_bus_lines = self.source_collection.find({'DATA': latest_date}).limit(2)
+        latest_bus_lines = self.source_collection.find({'DATA': latest_date})
         self.bus_lines = []
         for bus_line in latest_bus_lines:
             self.bus_lines.append(bus_line['COD'])
@@ -46,7 +46,7 @@ class Bus:
         # Get the date of the most recent bus line collected
         latest_date = self.source_collection.find().sort([['_id', pymongo.DESCENDING]]).limit(1)[0]['DATE']
         # Get the latest existing bus lines
-        latest_bus_vehicles = self.source_collection.find({'DATE': latest_date}).limit(2)
+        latest_bus_vehicles = self.source_collection.find({'DATE': latest_date})
         self.bus_vehicles = []
         for bus_vehicle in latest_bus_vehicles:
             if not bus_vehicle['PREFIXO'] in self.bus_vehicles:
