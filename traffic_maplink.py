@@ -19,49 +19,34 @@ import requests
 import HTMLParser
 import re
 from bs4 import BeautifulSoup
-from zabbix import pyzabbix_sender
+from control import Control
+from monitoring import Monitoring
+from db import DB
 
-# FOR A CORRECT UTF-8 ENCODING
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
 
 def get_parameters():
-    ''' GET THE PARAMETERS '''
-    parser = argparse.ArgumentParser(description='Crawler of Curitiba traffic news provided by the Curitiba\'s City Hall')
-    parser.add_argument('-s','--server', help='Name of the MongoDB server', required=True)
-    parser.add_argument('-p','--persistence', help='Name of the MongoDB persistence slave', required=False)
-    parser.add_argument('-d','--database', help='Name of the MongoDB database', required=True)
-    parser.add_argument('-c','--collection', help='Name of the MongoDB collection', required=True)
-    parser.add_argument('-t','--time', help='Time sleeping seconds', required=True)
+    ''' Get the parameters '''
+    global args
+    parser = argparse.ArgumentParser(description='Crawler of Curitiba poi from \
+        the URBS website.')
+    parser.add_argument('-s','--server',
+        help='Name of the MongoDB server', required=True)
+    parser.add_argument('-p','--persistence',
+        help='Name of the MongoDB persistence slave', required=False)
+    parser.add_argument('-d','--database',
+        help='Name of the MongoDB database', required=True)
+    parser.add_argument('-c','--collection',
+        help='Name of the MongoDB collection', required=True)
+    parser.add_argument('-t','--sleep_time',
+        help='Time sleeping seconds', required=True)
+    parser.add_argument('-f', '--control_file',
+        help='File to control the execution time', required=True)
+    parser.add_argument('-z', '--zabbix_host',
+        help='Zabbix host for monitoring', required=True)
     return vars(parser.parse_args())
-
-
-def db_connect(args):
-    ''' OPENS THE MONGO DB CONNECTION '''
-    ERROR = True
-    count_attempts = 0
-    while ERROR:
-        try:
-            count_attempts += 1
-            if (args['persistence'] == None):
-                client = pymongo.MongoClient(args['server'])
-            else:
-                client = pymongo.MongoClient([ args['server'], args['persistence'] ])
-            client.server_info()
-            print 'MongoDB Connection opened after', str(count_attempts), 'attempts', str(datetime.datetime.now())
-            ERROR = False
-        except pymongo.errors.ServerSelectionTimeoutError:
-            print 'MongoDB connection failed after', str(count_attempts), 'attempts. ', \
-                  str(datetime.datetime.now()), '. A new attempt will be made in 10 seconds'
-            time.sleep(10)
-    return client
-
-
-def db_location(args, client):
-    ''' SET THE DB LOCATION AND RETURN THE COLLECTION '''
-    db = client[args['database']]
-    return db[args['collection']]
 
 
 def extract_issue(block):
@@ -192,67 +177,33 @@ def get_data(city):
     return data
 
 
-def send_data(data, collection):
-    ''' SEND THE COLLECTED DATA TO THE MONGO DB '''
-    count_insertions = 0
-    for record in data:
-        post_id = collection.insert_one(record).inserted_id
-        count_insertions += 1
-    return count_insertions
+if __name__ == "__main__":
+    args = get_parameters()
 
-
-
-def inform_zabbix(host,trigger,num):
-    ''' SEND THE NUMBER OF RECORDS TO ZABBIX MONITORING '''
-    pyzabbix_sender.send(host,trigger,num,pyzabbix_sender.get_zabbix_server())
-
-
-def timestamp_now():
-    ''' RETURNS THE CURRENT TIMESTAMP '''
-    datetime_now = datetime.datetime.now()
-    return time.mktime(datetime_now.timetuple())
-
-
-if __name__ == '__main__':
+    # THE 10 MOST POPULATED CITIES OF BRAZIL
+    cities = ("sp/sao_paulo", "pr/curitiba", "rj/rio_de_janeiro", \
+        "mg/belo_horizonte", "ce/fortaleza", "pe/recife", "df/brasilia", \
+        "rs/porto_alegre", "am/manaus", "ba/salvador", "pa/belem", "go/goiania")
 
     try:
-        args = get_parameters()
-        client = db_connect(args)
-        collection = db_location(args, client)
-
-        # THE 10 MOST POPULATED CITIES OF BRAZIL
-        cities = ("sp/sao_paulo","pr/curitiba","rj/rio_de_janeiro","mg/belo_horizonte","ce/fortaleza",\
-                  "pe/recife","df/brasilia","rs/porto_alegre","am/manaus","ba/salvador","pa/belem","go/goiania")
-
-        while (True):
+        while True:
             print "Running Crawler Traffic Maplink", str(datetime.datetime.now())
+            connection = DB(args)
+            control = Control(args['sleep_time'],args['control_file'])
+            control.verify_next_execution()
 
-            # GET THE TIME OF THE LOOP BEGIN
-            init_time = timestamp_now()
+            collection = connection.get_collection(args['collection'])
 
             for city in cities:
                 print "Running city", city
                 data = get_data(city)
-                count_insertions = send_data(data, collection)
-                print "Execution completed with ", count_insertions, "records", str(datetime.datetime.now())
-                inform_zabbix('_bigsea', 'traffic_maplink', count_insertions)
+                insertions = connection.send_data(data, collection)
+                Monitoring().send(args['zabbix_host'], str(args['collection']), insertions)
 
-            # GET THE TIME OF THE LOOP END AND THE DURATION
-            finish_time = timestamp_now()
-            duration_time = finish_time - init_time
+            connection.client.close()
 
-            print "Execution took", str(duration_time), "seconds.\n"
-            print "Next will occur in", int(args['time']) - duration_time, "seconds."
+            control.set_end(insertions)
+            control.assign_next_execution()
 
-            # CLOSE THE CONNECTION AND WAIT
-            client.close()
-            if (int(args['time']) > duration_time):
-                time.sleep(int(args['time']) - duration_time)
-
-
-    except:
-        print "Execution failed", str(datetime.datetime.now())
-        inform_zabbix('_bigsea', 'traffic_maplink', 0)
-        print u'\n\nShutting down...\n\n'
-
-
+    except KeyboardInterrupt:
+        print u'\nShutting down...'

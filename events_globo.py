@@ -18,6 +18,8 @@ from control import Control
 from monitoring import Monitoring
 from db import DB
 
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 
 def get_parameters():
