@@ -38,5 +38,6 @@ class DB:
                 collection.insert_one(record)
                 count_insertions += 1
             except pymongo.errors.DuplicateKeyError:
+                print "Duplicated"
                 pass
         return count_insertions

@@ -3,7 +3,7 @@
 
 '''
 Collect information about the Weather
-from the Dark Sky API and insert to a MongoDB.
+from the Open Weather API and insert to a MongoDB.
 Author: Luiz Fernando M Carvalho
 Email: fernandocarvalho3101 at gmail dot com
 '''
@@ -40,7 +40,7 @@ def get_parameters():
     ''' Get the parameters '''
     global args
     parser = argparse.ArgumentParser(description='Get data about the \
-        Weather from the Dark Sky API')
+        Weather in the stations from the Open Weather API')
     parser.add_argument('-s','--server',
         help='Name of the MongoDB server', required=True)
     parser.add_argument('-p','--persistence',
@@ -60,29 +60,32 @@ def get_parameters():
     parser.add_argument('-su', '--subdistricts',
         help='CSV file with the target subdistricts information', required=True)
     parser.add_argument('-a', '--api_key',
-        help='Dark SKY API', required=True)
+        help='Open Weather API', required=True)
     return vars(parser.parse_args())
 
 
-def get_data(regions, api_key):
-    ''' Get data about the weather '''
+
+def get_data(regions, API_key):
     data = []
     for region in regions:
         print region
-        # BUILD THE LINK AND GET THE CONTENT
-        link = "https://api.darksky.net/forecast/" + api_key + "/" + \
-            region['latitude'] + "," + region['longitude']
+        # REQUESTS INFORMATION ABOUT THE WEATHER STATIONS AROUND THE CENTROIDS AND INSERT TO THE MONGO DB
+        link = "http://api.openweathermap.org/data/2.5/station/find?lat=" + region['latitude'] + "&lon=" + region['longitude'] + "&cnt=10&APPID=" + API_key 
         content = requests.get(link)
-        record = json.loads(content.text)
-        #ADD FIELDS ABOUT THE CRAWLING
-        record['query'] = {}
-        record['query']['datetime'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        record['query']['date'] = datetime.datetime.today()
-        record['query']['type'] = region['type']
-        record['query']['code'] = region['code']
-        record['query']['city'] = region['city']
-        data.append(record)
+        content_json = json.loads(content.text)
+        # THE CONTENT IS AN ARRAY BECAUSE IT IS COMPOSED OF INFORMATION ABOUT SOME WEATHER STATIONS
+        for record in content_json:
+            # ADD FIELDS ABOUT THE CRAWLING
+            record['query'] = {}
+            record['query']['datetime'] = str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')) + " BRT"
+            record['query']['type'] = region['type']
+            record['query']['code'] = region['code']
+            record['query']['city'] = region['city']
+            data.append(record)
     return data
+
+
+
 
 
 if __name__ == "__main__":
@@ -93,7 +96,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            print "Running Crawler Weather Dark Sky " + str(datetime.datetime.now())
+            print "Running Crawler Weather Open Weather" + str(datetime.datetime.now())
             connection = DB(args)
             control = Control(args['sleep_time'],args['control_file'])
             control.verify_next_execution()
@@ -112,10 +115,6 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print u'\nShutting down...'
-
-
-
-
 
 
 
