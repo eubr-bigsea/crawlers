@@ -158,7 +158,7 @@ def get_data(city):
                     place_block.find('div', {'class':'property_title'}).find('a').attrs['href']
                 place_info['place_name'] = place_block.find('div',
                     {'class':'property_title'}).find('a').get_text()
-                print place_info['place_name']
+                #print place_info['place_name']
                 place_info['category'] = category_description
                 place_info['popularity'] = {}
                 place_info['popularity']['ranking_position'] = format_string(place_block.find('div',
@@ -263,6 +263,8 @@ def get_data(city):
                     place_info['popularity']['scores'] = {}
 
                 data.append(place_info)
+
+    return data
 
 
 

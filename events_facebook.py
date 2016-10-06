@@ -163,7 +163,7 @@ def get_data(centroid, api_tokens):
                     record['venue']['venue_location'] = {}
 
                 for event in dict_venues_content[venue_id]['events']['data']:
-                    print "EVENT", event['id']
+                    #print "EVENT", event['id']
                     record['event'] = {}
                     record['event']['event_id'] = event['id']
                     try:

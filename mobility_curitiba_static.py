@@ -19,7 +19,6 @@ import time
 import json
 import pymongo
 import argparse
-from zabbix import pyzabbix_sender
 from control import Control
 from monitoring import Monitoring
 from db import DB
@@ -47,7 +46,7 @@ class Bus:
 
     def get_latest_vehicles(self):
         # Get the date of the most recent bus line collected
-        latest_date = self.source_collection.find().sort([['_id', pymongo.DESCENDING]]).limit(1)[0]['DATE']
+        latest_date = self.source_collection.find().sort([['_id', pymongo.DESCENDING]]).limit(1)[0]['DATA']
         # Get the latest existing bus lines
         latest_bus_vehicles = self.source_collection.find({'DATA': latest_date})
         self.bus_vehicles = []
@@ -56,6 +55,11 @@ class Bus:
                 self.bus_vehicles.append(bus_vehicle['PREFIXO'])
 
     def request(self, link):
+        content = requests.get(link)
+        return json.loads(content.text)
+
+    # It is not in use in order to respect URBS requisitions limitations
+    def robust_request(self, link):
         error = True
         attempts = 0
         # Get data from the URBS web server
@@ -162,9 +166,6 @@ class BusVehicles (Bus):
                 self.data.append(record)
 
 
-
-
-
 class IO:
     def __init__(self):
         ''' Get the parameters '''
@@ -194,8 +195,6 @@ class IO:
                 record['collection'] = columns[2]
                 record['source_collection'] = columns[3]
                 self.databases.append(record)
-
-
 
 
 
