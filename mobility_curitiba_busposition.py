@@ -52,7 +52,7 @@ def get_data(access_key):
     content = requests.get(link)
     records = json.loads(content.text)
     for record in records:
-        record['DATA'] = datetime.datetime.today()
+        record['DATA'] = datetime.datetime.now().strftime('%Y-%m-%d')
         data.append(record)
     return data
 

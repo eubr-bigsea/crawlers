@@ -25,8 +25,8 @@ sys.setdefaultencoding('utf-8')
 def get_parameters():
     ''' Get the parameters '''
     global args
-    parser = argparse.ArgumentParser(description='Crawler of Bus position from \
-        the Data Rio website.')
+    parser = argparse.ArgumentParser(description='Crawler of Sao Paulo Bus \
+        position from the SP Trans web service.')
     parser.add_argument('-s','--server',
         help='Name of the MongoDB server', required=True)
     parser.add_argument('-p','--persistence',

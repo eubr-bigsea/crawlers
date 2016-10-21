@@ -45,7 +45,7 @@ def get_parameters():
 
 
 def get_data():
-    ''' Get data from the URBS website '''
+    ''' Get data from the Data Rio web service '''
     data = []
     link = "http://dadosabertos.rio.rj.gov.br/apiTransporte/apresentacao/rest/index.cfm/onibus"
     content = requests.get(link)
@@ -59,7 +59,7 @@ def get_data():
         record['longitude'] = line[4]
         record['speed'] = line[5]
         record['direction'] = line[6]
-        record['date'] = datetime.datetime.today()
+        record['date'] = datetime.datetime.now().strftime('%Y-%m-%d')
         data.append(record)
     return data
 
