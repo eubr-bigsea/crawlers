@@ -22,7 +22,7 @@ There is no way to find all events within these cities, therefore we apply a heu
 
 **Google:**artistic events suggested by Google in the top box that appears whenever a seach in a city for events is performed (web scraping). 
 
-#### Mobility crawlers
+### Mobility crawlers
 
 **Curitiba Busposition:**Collects the geographic position of each bus vehicle in Curitiba. It uses the URBS (Curitiba public transportation company) API.
 
@@ -35,28 +35,28 @@ There is no way to find all events within these cities, therefore we apply a heu
 **Sao Paulo Buslines:**Existing bus lines in Sao Paulo. It uses the SPTrans (Sao Paulo public transportation company) API.
 
 
-#### News crawlers
+### News crawlers
 
 **News Curitiba Cityhall:**News released by the Curitiba City Hall about the treffic in the city.
 
-#### POI crawlers
+### POI crawlers
 
 **POI Curitiba:**data about the POI of Curitiba. It includes information about hospitals, hotels, schools, cemitery and pois of services for the population. The dataset is provided by the public transportation company of Curitiba, URBS through an API.
 
 **POI Tripadvisor:**POI, facilities, pubs in the 10 most populated cities In Brazil from the Trip Advisor WebSite.
 
-#### Traffic crawlers
+### Traffic crawlers
 
 **Traffic Maplink:**traffic status in the main streets and avenues in the top ten cities in Brazil from the MapLink website.
 
 
-#### Weather crawlers
+### Weather crawlers
 
-**weather_darksky:** 
+**Weather Darksky:**current weather and weather predictions for the top 10 Brazilian cities. The data is provided through the Darksky API and the target geographic points in the query are the subdistricts centroids of each city.
 
-**weather_openweather:** 
+**Weather Openweather:**current weather in the top ten cities according to the Openweather API. It also considers the centroids of the cities' subdistricts. 
 
-**weather_openweather_stations:** 
+**Weather Openweather Stations:**current weather in the weather stations closest to the centroids of the cities' subdistricts.
 
 
 
