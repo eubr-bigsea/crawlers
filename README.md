@@ -59,19 +59,8 @@ There is no way to find all events within these cities, therefore we apply a heu
  - **Weather Openweather Stations:**current weather in the weather stations closest to the centroids of the cities' subdistricts.
 
 
+## Modules
 
-## Implementation details
-
-
-
-#### Common methods
-
-  - 
-  - 
-  - 
-
-#### Common classes
-
- - **Control:** 
- - **DB:** 
- - **Monitoring:** 
+ - **Control:**control the execution frequency and duration. The main purpose is to verify if the execution can proceed due to the sleep time assigned, otherwise the crawler can be blocked by the API services.
+ - **DB:**manage the MongoDB connection: opens connection and sends data. 
+ - **Monitoring:**send crawling information to the Zabbix monitoring system.
