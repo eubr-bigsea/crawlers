@@ -48,18 +48,29 @@ def get_data():
     ''' Get data from the Data Rio web service '''
     data = []
     link = "http://dadosabertos.rio.rj.gov.br/apiTransporte/apresentacao/rest/index.cfm/obterTodasPosicoes"
-    content = requests.get(link)
-    content_json = json.loads(content.text)
-    for line in content_json['DATA']:
-        record = {}
-        record['datetime'] = line[0]
-        record['vehicle'] = line[1]
-        record['bus_line'] = line[2]
-        record['latitude'] = line[3]
-        record['longitude'] = line[4]
-        record['speed'] = line[5]
-        record['date'] = datetime.datetime.now().strftime('%Y-%m-%d')
-        data.append(record)
+    error = 1
+    while error:
+        try:
+            content = requests.get(link)
+            content_json = json.loads(content.text)
+            for line in content_json['DATA']:
+                record = {}
+                record['datetime'] = line[0]
+                record['vehicle'] = line[1]
+                record['bus_line'] = line[2]
+                record['latitude'] = line[3]
+                record['longitude'] = line[4]
+                record['speed'] = line[5]
+                record['date'] = datetime.datetime.now().strftime('%Y-%m-%d')
+                data.append(record)
+            error = 0
+        except:
+            print "\n\n ERROR getting data in", datetime.datetime.now()
+            for e in sys.exc_info():
+                print e
+            print "Sleeping for 300 seconds\n\n"
+            data = []
+            control.wait(300)
     return data
 
 

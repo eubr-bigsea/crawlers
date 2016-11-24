@@ -88,7 +88,7 @@ def get_data(cities):
                 record['place'] = "Unknown"
                 record['title'] = str(title.get_text())
             record['date'] = str(date.get_text())
-            record['request_date'] = str(datetime.datetime.now().strftime('%Y-%m-%d'))
+            record['request_date'] = datetime.datetime.now().strftime('%Y-%m-%d')
             record['city'] = city
 
             data.append(record)

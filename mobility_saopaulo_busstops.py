@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Collect information about bus position in Sao Paulo
+Collect information about bus stops in Sao Paulo
 from SPTrans website and insert to a MongoDB.
 Author: Luiz Fernando M Carvalho
 Email: fernandocarvalho3101 at gmail dot com
@@ -56,19 +56,19 @@ def get_data(token):
     response = s.post(link+'/Login/Autenticar?token={}'.format(token))
 
 
-    # Get bus lines
+    # Get bus stops
     data = []
-    existing_bus_lines = {}
+    existing_bus_stops = {}
     for i in (list(string.ascii_uppercase) + range(0,10)): #list(string.ascii_uppercase): #range(0,10):
         #print "=========",i,"============"
-        content = s.get(link + '/Linha/Buscar?termosBusca={}'.format(str(i)))
+        content = s.get(link + '/Parada/Buscar?termosBusca={}'.format(str(i)))
         content_json = json.loads(content.text)
         for record in content_json:
-            if not existing_bus_lines.has_key(record['CodigoLinha']):
-                existing_bus_lines[record['CodigoLinha']] = True
+            if not existing_bus_stops.has_key(record['CodigoParada']):
+                existing_bus_stops[record['CodigoParada']] = True
                 record['Data'] = str(datetime.datetime.today())
-        #        print record['Letreiro'], record['CodigoLinha']
                 data.append(record)
+            #print record['CodigoParada']
     print len(data)        
     return data
 
@@ -78,13 +78,13 @@ if __name__ == "__main__":
 
     try:
         while True:
-            print 'Running crawler Mobility Sao Paulo Bus Lines', datetime.datetime.now()
+            print 'Running crawler Mobility Sao Paulo Bus Stops', datetime.datetime.now()
             connection = DB(args)
             control = Control(args['sleep_time'],args['control_file'])
             control.verify_next_execution()
 
             collection = connection.get_collection(args['collection'])
-            collection.create_index([('CodigoLinha', pymongo.ASCENDING),
+            collection.create_index([('CodigoParada', pymongo.ASCENDING),
                 ('Data', pymongo.ASCENDING)], unique=True)
 
             data = get_data(args['token'])
@@ -99,3 +99,4 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print u'\nShutting down...'
+

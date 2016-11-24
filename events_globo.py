@@ -9,6 +9,7 @@ Author: Luiz Fernando M Carvalho
 Email: fernandocarvalho3101 at gmail dot com
 '''
 
+import sys
 import pymongo
 import requests
 import json

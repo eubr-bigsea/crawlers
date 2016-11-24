@@ -72,12 +72,13 @@ def get_data(regions, api_key):
         # BUILD THE LINK AND GET THE CONTENT
         link = "https://api.darksky.net/forecast/" + api_key + "/" + \
             region['latitude'] + "," + region['longitude']
+        #print "\n\n",link,"\n\n"
         content = requests.get(link)
         record = json.loads(content.text)
         #ADD FIELDS ABOUT THE CRAWLING
         record['query'] = {}
         record['query']['datetime'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        record['query']['date'] = datetime.datetime.today()
+        record['query']['date'] = datetime.datetime.now().strftime('%Y-%m-%d')
         record['query']['type'] = region['type']
         record['query']['code'] = region['code']
         record['query']['city'] = region['city']

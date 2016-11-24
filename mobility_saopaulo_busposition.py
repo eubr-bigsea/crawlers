@@ -14,7 +14,6 @@ import pymongo
 import json
 import argparse
 import requests
-import string
 from control import Control
 from monitoring import Monitoring
 from db import DB
@@ -59,17 +58,16 @@ def get_data(token):
     # Get bus lines
     data = []
     existing_bus_lines = {}
-    for i in (list(string.ascii_uppercase) + range(0,10)): #list(string.ascii_uppercase): #range(0,10):
-        #print "=========",i,"============"
-        content = s.get(link + '/Linha/Buscar?termosBusca={}'.format(str(i)))
-        content_json = json.loads(content.text)
-        for record in content_json:
-            if not existing_bus_lines.has_key(record['CodigoLinha']):
-                existing_bus_lines[record['CodigoLinha']] = True
-                record['Data'] = str(datetime.datetime.today())
-        #        print record['Letreiro'], record['CodigoLinha']
-                data.append(record)
-    print len(data)        
+#    content = s.get(link + '/Parada/BuscarParadasPorLinha?codigoLinha={}'.format('2486'))
+#    content = s.get(link + '/Parada/Buscar?termosBusca={}'.format('2'))
+    content = s.get(link + '/Posicao?codigoLinha={}'.format('2486'))
+    content_json = json.loads(content.text)
+#        for record in content_json:
+#            if not existing_bus_lines.has_key(record['CodigoLinha']):
+#                existing_bus_lines['CodigoLinha'] = True
+#                record['Data'] = str(datetime.datetime.today())
+#                data.append(record)
+    print content_json
     return data
 
 
@@ -88,6 +86,8 @@ if __name__ == "__main__":
                 ('Data', pymongo.ASCENDING)], unique=True)
 
             data = get_data(args['token'])
+            sys.exit()
+
             insertions = connection.send_data(data, collection)
 
             Monitoring().send(args['zabbix_host'], str(args['collection']), insertions)

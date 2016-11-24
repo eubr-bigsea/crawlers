@@ -119,6 +119,9 @@ def get_data(centroid, api_tokens):
         str(2000) + "&limit=" + str(5000) + "&fields=id&access_token=" + \
         api_tokens[random.randint(0, len(api_tokens)-1)]
 
+    #print "\n\n",link_get_ids,"\n\n"
+    #sys.exit()
+
     # GET DATA
     dict_venues_ids = request_data(link_get_ids)
     array_venue_ids = [x['id'] for x in dict_venues_ids['data']]

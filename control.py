@@ -42,3 +42,6 @@ class Control:
         print "Next will occur in", float(self.sleep_time) - self.duration, "seconds."
         print "Next will occur at", datetime.datetime.fromtimestamp(self.next_execution)
         time.sleep(self.sleep_time)
+
+    def wait(self,seconds):
+        time.sleep(seconds)
